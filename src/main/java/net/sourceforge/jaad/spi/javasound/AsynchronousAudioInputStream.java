@@ -2,7 +2,6 @@ package net.sourceforge.jaad.spi.javasound;
 
 import net.sourceforge.jaad.spi.javasound.CircularBuffer.Trigger;
 import java.io.IOException;
-import java.io.InputStream;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 
@@ -11,8 +10,8 @@ abstract class AsynchronousAudioInputStream extends AudioInputStream implements 
 	private byte[] singleByte;
 	protected final CircularBuffer buffer;
 
-	AsynchronousAudioInputStream(InputStream in, AudioFormat format, long length) throws IOException {
-		super(in, format, length);
+	AsynchronousAudioInputStream(AudioFormat format, long length) throws IOException {
+		super(null, format, length);
 		buffer = new CircularBuffer(this);
 	}
 
