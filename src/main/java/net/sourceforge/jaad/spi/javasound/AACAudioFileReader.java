@@ -20,7 +20,7 @@ public class AACAudioFileReader extends AudioFileReader {
 	public static final AudioFileFormat.Type AAC = new AudioFileFormat.Type("AAC", "aac");
 	public static final AudioFileFormat.Type MP4 = new AudioFileFormat.Type("MP4", "mp4");
 	private static final AudioFormat.Encoding AAC_ENCODING = new AudioFormat.Encoding("AAC");
-	private static final int MARK_READ_LIMIT = 1000;
+	private static final int MARK_READ_LIMIT = 100000;
 
 	@Override
 	public AudioFileFormat getAudioFileFormat(InputStream in) throws UnsupportedAudioFileException, IOException {
@@ -35,7 +35,8 @@ public class AACAudioFileReader extends AudioFileReader {
 	@Override
 	public AudioFileFormat getAudioFileFormat(URL url) throws UnsupportedAudioFileException, IOException {
 		final URLConnection connection = url.openConnection();
-		final InputStream in = new BufferedInputStream(connection.getInputStream());
+		InputStream in = connection.getInputStream();
+		if(! in.markSupported()) in = new BufferedInputStream(in);
 		try {
 			return getAudioFileFormat(in,connection.getContentLength());
 		}
@@ -46,16 +47,11 @@ public class AACAudioFileReader extends AudioFileReader {
 
 	@Override
 	public AudioFileFormat getAudioFileFormat(File file) throws UnsupportedAudioFileException, IOException {
-		MP4AudioInputStream mp4AudioInputStream = new MP4AudioInputStream(new RandomAccessFile(file,"r"),new AudioFormat(AAC_ENCODING, AudioSystem.NOT_SPECIFIED, AudioSystem.NOT_SPECIFIED, (int) file.length(), AudioSystem.NOT_SPECIFIED, AudioSystem.NOT_SPECIFIED, true),AudioSystem.NOT_SPECIFIED);
+		RandomAccessFile raf = new RandomAccessFile(file,"r");
 		try{
-			AudioFormat audioFormat = mp4AudioInputStream.getFormat();
-			if(audioFormat.getSampleSizeInBits()==0){
-				throw new UnsupportedAudioFileException();
-			}else{
-				return new JaadAudioFileFormat(MP4, (int) file.length(), audioFormat, AudioSystem.NOT_SPECIFIED);
-			}
+			return new JaadAudioFileFormat(MP4, (int) file.length(), MP4AudioInputStream.getFormat(raf), AudioSystem.NOT_SPECIFIED);
 		}finally{
-			mp4AudioInputStream.close();
+			raf.close();
 		}
 	}
 
@@ -65,19 +61,12 @@ public class AACAudioFileReader extends AudioFileReader {
 		try{
 			final byte[] head = new byte[12];
 			in.read(head);
-			if(! new String(head, 4, 4).equals("ftyp")){
-				throw new UnsupportedAudioFileException();
+			if(! new String(head, 4, 4,"US-ASCII").equals("ftyp")){
+				throw new UnsupportedAudioFileException("The string 'ftyp' is not presenting startin at byte 4");
 			}
 			in.reset();
 			in.mark(MARK_READ_LIMIT);
-			@SuppressWarnings("resource") // do not close MP4AudioInputStream - the InputStream should stay open
-			MP4AudioInputStream mp4AudioInputStream = new MP4AudioInputStream(in,new AudioFormat(AAC_ENCODING, AudioSystem.NOT_SPECIFIED, AudioSystem.NOT_SPECIFIED, mediaLength, AudioSystem.NOT_SPECIFIED, AudioSystem.NOT_SPECIFIED, true),AudioSystem.NOT_SPECIFIED);
-			AudioFormat audioFormat = mp4AudioInputStream.getFormat();
-			if(audioFormat.getSampleSizeInBits()==0){
-				throw new UnsupportedAudioFileException();
-			}else{
-				return new JaadAudioFileFormat(MP4, mediaLength, audioFormat, AudioSystem.NOT_SPECIFIED);
-			}
+			return new JaadAudioFileFormat(MP4, mediaLength, MP4AudioInputStream.getFormat(in), AudioSystem.NOT_SPECIFIED);
 		}finally{
 			in.reset();
 		}
@@ -98,11 +87,7 @@ public class AACAudioFileReader extends AudioFileReader {
 	public AudioInputStream getAudioInputStream(URL url) throws UnsupportedAudioFileException, IOException {
 		final URLConnection connection = url.openConnection();
 		final InputStream in = new BufferedInputStream(connection.getInputStream());
-		try {
-			return getAudioInputStream(in, connection.getContentLength());
-		}finally{
-			in.close();
-		}
+		return getAudioInputStream(in, connection.getContentLength());
 	}
 
 	@Override
