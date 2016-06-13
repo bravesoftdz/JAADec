@@ -2,6 +2,7 @@ package net.sourceforge.jaad.spi.javasound;
 
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
@@ -19,7 +20,7 @@ public class AACAudioFileReader extends AudioFileReader {
 
 	public static final AudioFileFormat.Type AAC = new AudioFileFormat.Type("AAC", "aac");
 	public static final AudioFileFormat.Type MP4 = new AudioFileFormat.Type("MP4", "mp4");
-	private static final AudioFormat.Encoding AAC_ENCODING = new AudioFormat.Encoding("AAC");
+	static final AudioFormat.Encoding AAC_ENCODING = new AudioFormat.Encoding("AAC");
 	private static final int MARK_READ_LIMIT = 100000;
 
 	@Override
@@ -75,7 +76,7 @@ public class AACAudioFileReader extends AudioFileReader {
 	//================================================
 	private AudioInputStream getAudioInputStream(InputStream in, int mediaLength) throws UnsupportedAudioFileException, IOException {
 		final AudioFileFormat aff = getAudioFileFormat(in, mediaLength);
-		return new MP4AudioInputStream(in, aff.getFormat(), aff.getFrameLength());
+		return new AudioInputStream(in, aff.getFormat(), aff.getFrameLength());
 	}
 
 	@Override
@@ -93,6 +94,6 @@ public class AACAudioFileReader extends AudioFileReader {
 	@Override
 	public AudioInputStream getAudioInputStream(File file) throws UnsupportedAudioFileException, IOException {
 		final AudioFileFormat aff = getAudioFileFormat(file);
-		return new MP4AudioInputStream(new RandomAccessFile(file,"r"), aff.getFormat(), aff.getFrameLength());
+		return new AudioInputStream(new BufferedInputStream(new FileInputStream(file)), aff.getFormat(), aff.getFrameLength());
 	}
 }

@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.logging.Level;
 
 import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 import net.sourceforge.jaad.mp4.api.Track;
@@ -50,6 +51,9 @@ class MP4AudioInputStream extends AsynchronousAudioInputStream {
 		this.in = in;
 		final MP4Container cont = new MP4Container(in);
 		final Movie movie = cont.getMovie();
+		if(movie == null){
+			throw new AACException("movie does not contain any movie info");
+		}
 		final List<Track> tracks = movie.getTracks(AudioTrack.AudioCodec.AAC);
 		if(tracks.isEmpty()) throw new IOException("movie does not contain any AAC track");
 		track = (AudioTrack) tracks.get(0);
@@ -83,7 +87,7 @@ class MP4AudioInputStream extends AsynchronousAudioInputStream {
 			if(sampleBuffer.getBitsPerSample()<=0){
 				throw new UnsupportedAudioFileException("Invalid or unsupported audio data");
 			}else{
-				return new AudioFormat(sampleBuffer.getSampleRate(), sampleBuffer.getBitsPerSample(), sampleBuffer.getChannels(), true, true);
+				return new AudioFormat(AACAudioFileReader.AAC_ENCODING, (float) sampleBuffer.getSampleRate(), sampleBuffer.getBitsPerSample(), sampleBuffer.getChannels(), AudioSystem.NOT_SPECIFIED, (float) AudioSystem.NOT_SPECIFIED, true);
 			}
 		}catch(AACException e){
 			Constants.LOGGER.log(Level.INFO, "Exception parsing AAC", e);
